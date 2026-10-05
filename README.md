@@ -15,7 +15,7 @@ The GUI accepts:
 
 The size can be entered in millimeters or inches. If the inches field contains a value, that value is used; otherwise the millimeter field is used. Inch measurements are converted to millimeters using **1 inch = 25.4 mm** before the visual-angle calculation.
 
-The GUI and CLI use the same underlying `calculate_visual_acuity()` function.
+The GUI and CLI use the same underlying `calculate_visual_acuity()` function. The GUI additionally accepts inches and converts them to millimeters before calling that function.
 
 For the mathematical derivation, see [docs/index.md](docs/index.md) or the [documentation site](https://mrhunsaker.github.io/EnvironmentalObjectVisualAcuity/).
 
@@ -96,12 +96,6 @@ Calculate from an object size in millimeters:
 python visual_acuity_cli_tool.py --size 18 --distance 10
 ```
 
-Calculate from an object size in inches:
-
-```bash
-python visual_acuity_cli_tool.py --size 0.71 --inches --distance 10
-```
-
 Round the Snellen denominator:
 
 ```bash
@@ -110,8 +104,7 @@ python visual_acuity_cli_tool.py --size 18 --distance 10 --round
 
 ### CLI options
 
-- `-s`, `--size`: Object size. Millimeters by default; inches when `-i` / `--inches` is supplied.
-- `-i`, `--inches`: Interpret `--size` as inches and convert it to millimeters.
+- `-s`, `--size`: Object size in millimeters.
 - `-d`, `--distance`: Viewing distance in feet.
 - `-r`, `--round`: Round the Snellen denominator to the nearest whole integer.
 
