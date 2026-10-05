@@ -35,7 +35,7 @@ S_mm = S_in × 25.4
 
 where S is object size.
 
-The GUI has separate millimeter and inch fields. If the inches field contains a value, the inches value is used; otherwise the millimeter value is used.
+The GUI has separate millimeter and inch fields. If the inches field contains a value, the inches value is used; otherwise the millimeter value is used. The current CLI accepts object size in millimeters only.
 
 ### Viewing distance
 
@@ -189,12 +189,6 @@ python visual_acuity_cli_tool.py --size 18 --distance 10 --round
 python visual_acuity_cli_tool.py --size 18 --distance 10
 ```
 
-### Inches
-
-```bash
-python visual_acuity_cli_tool.py --size 0.71 --inches --distance 10
-```
-
 ### Whole-number Snellen denominator
 
 ```bash
@@ -203,10 +197,11 @@ python visual_acuity_cli_tool.py --size 18 --distance 10 --round
 
 Available options:
 
-- `-s`, `--size`: Object size. Millimeters by default.
-- `-i`, `--inches`: Interpret the size as inches.
+- `-s`, `--size`: Object size in millimeters.
 - `-d`, `--distance`: Viewing distance in feet.
 - `-r`, `--round`: Round the Snellen denominator to the nearest integer.
+
+The GUI, unlike the current CLI, also accepts object size in inches.
 
 ---
 
