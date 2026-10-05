@@ -1,2 +1,2 @@
-nicegui[native]>=2.0,<4
+nicegui[native]>=2.10,<4
 pyinstaller>=6.0,<7

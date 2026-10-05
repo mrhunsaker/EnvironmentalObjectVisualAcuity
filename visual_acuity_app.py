@@ -378,7 +378,7 @@ with ui.column().classes(
 
                 The small-angle approximation is:
 
-                **x ≈ 45.1225 × object size (mm) / distance (ft)**
+                **x ≈ 45.1148 × object size (mm) / distance (ft)**
                 """
             )
 
@@ -401,8 +401,8 @@ if __name__ in {"__main__", "__mp_main__"}:
     ui.run(
         title="Visual Acuity Calculator",
         host="127.0.0.1",
-        port=8080,
+        port=8989,
         reload=False,
-        native=True,
+        native=False,  # desktop window from source, browser when packaged
         window_size=(1000, 750),
     )
