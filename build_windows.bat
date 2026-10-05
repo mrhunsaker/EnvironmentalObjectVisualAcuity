@@ -7,7 +7,7 @@ python -m pip install -r requirements.txt
 if errorlevel 1 exit /b 1
 
 echo Building Visual Acuity Calculator...
-python -m PyInstaller --clean --noconfirm visual_acuity_calculator.spec
+nicegui-pack --onefile --name "VisualAcuityCalculator" visual_acuity_app.py
 if errorlevel 1 exit /b 1
 
 echo.
