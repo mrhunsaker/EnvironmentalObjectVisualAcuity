@@ -63,9 +63,9 @@ $$x \\approx \\left(\\frac{86400}{609.6 \\cdot \\pi}\\right) \\cdot \\frac{S}{D}
 
 | Target Parameter              | Approximation Formula                                               |
 | :----------------------------- | :------------------------------------------------------------------- |
-| **Snellen Denominator ($x$)** | $x \\approx 45.1225 \\times \\frac{S\\text{ (mm)}}{D\\text{ (ft)}}$ |
+| **Snellen Denominator ($x$)** | $x \\approx 45.1148 \\times \\frac{S\\text{ (mm)}}{D\\text{ (ft)}}$ |
 | **Object Size ($S$ in mm)**   | $S \\approx 0.02216 \\times D\\text{ (ft)} \\times x$               |
-| **Distance ($D$ in ft)**      | $D \\approx \\frac{45.1225 \\times S\\text{ (mm)}}{x}$              |
+| **Distance ($D$ in ft)**      | $D \\approx \\frac{45.1148 \\times S\\text{ (mm)}}{x}$              |
 
 
 For sizes in inches, divide the result by $25.4$: e.g. $S\_{\\text{in}} \\approx 0.000872 \\times D\\text{ (ft)} \\times x$.

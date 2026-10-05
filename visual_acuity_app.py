@@ -5,21 +5,12 @@ import sys
 # ---------------------------------------------------------
 # PyInstaller / Windows compatibility
 # ---------------------------------------------------------
-#
-# A frozen (PyInstaller) executable on Windows must call
-# freeze_support() before anything spawns a child process,
-# otherwise every child re-runs the entry script and the
-# server never comes up (shows "Internal Service Error").
-#
+
 if getattr(sys, "frozen", False):
     multiprocessing.freeze_support()
 
-# When PyInstaller builds a windowed application with
-# console=False, stdout/stderr can be None.
-#
-# Uvicorn/NiceGUI expects these objects to exist when
-# configuring its logging system.
-#
+# PyInstaller windowed applications can have stdout/stderr
+# set to None. NiceGUI/Uvicorn expects these objects to exist.
 if sys.stdout is None:
     sys.stdout = open(os.devnull, "w", encoding="utf-8")
 
@@ -40,18 +31,35 @@ MM_PER_INCH = 25.4
 
 
 # ---------------------------------------------------------
+# UI references
+#
+# These are assigned when page() builds the interface.
+# ---------------------------------------------------------
+
+size_mm_input = None
+size_in_input = None
+distance_input = None
+round_input = None
+
+error_card = None
+error_text = None
+
+result_card = None
+result_heading = None
+result_text = None
+details_text = None
+
+
+# ---------------------------------------------------------
 # Size input handling
 # ---------------------------------------------------------
 
 def get_size_mm():
     """
-    Return (size_mm, entered_size, unit_label) based on
-    whichever size field is filled in.
+    Return (size_mm, entered_size, unit_label).
 
-    If both fields are filled in, the millimeter field is
-    used; the inches field is only consulted when the
-    millimeters field is empty (matching the CLI behavior
-    of passing -i only when the size is given in inches).
+    If both fields are filled in, the inches field takes
+    precedence, matching the original application behavior.
     """
 
     size_mm_value = size_mm_input.value
@@ -69,7 +77,11 @@ def get_size_mm():
             "inches",
         )
 
-    return float(size_mm_value), float(size_mm_value), "millimeters"
+    return (
+        float(size_mm_value),
+        float(size_mm_value),
+        "millimeters",
+    )
 
 
 # ---------------------------------------------------------
@@ -84,7 +96,15 @@ def calculate():
 
     try:
         size, entered_size, unit = get_size_mm()
-        distance = float(distance_input.value)
+
+        distance_value = distance_input.value
+
+        if distance_value is None:
+            raise ValueError(
+                "Enter a viewing distance in feet."
+            )
+
+        distance = float(distance_value)
 
         if size <= 0:
             raise ValueError(
@@ -121,15 +141,22 @@ def calculate():
             )
 
         # -------------------------------------------------
-        # Update result
+        # Format object size
         # -------------------------------------------------
 
-        size_line = (
-            f"Object size: {entered_size:.2f} inches "
-            f"({size:.2f} millimeters). "
-            if unit == "inches"
-            else f"Object size: {size:.2f} millimeters. "
-        )
+        if unit == "inches":
+            size_line = (
+                f"Object size: {entered_size:.2f} inches "
+                f"({size:.2f} millimeters). "
+            )
+        else:
+            size_line = (
+                f"Object size: {size:.2f} millimeters. "
+            )
+
+        # -------------------------------------------------
+        # Update result
+        # -------------------------------------------------
 
         result_text.text = (
             f"Equivalent visual acuity: {acuity}"
@@ -148,11 +175,8 @@ def calculate():
         result_card.classes(remove="hidden")
         error_card.classes(add="hidden")
 
-        # Move focus to the result heading.
-        #
-        # This is important for screen-reader users because
-        # they receive the result immediately after pressing
-        # Calculate.
+        # Move focus to the result heading for screen-reader
+        # users.
         result_heading.run_method("focus")
 
     except (TypeError, ValueError) as error:
@@ -196,213 +220,225 @@ def clear_form():
 # Page
 # ---------------------------------------------------------
 
-ui.page_title("Visual Acuity Calculator")
+def page():
+    """
+    Build the NiceGUI page.
 
+    Keeping the UI inside a page function is important for
+    PyInstaller compatibility with current NiceGUI versions.
+    """
 
-with ui.column().classes(
-    "w-full max-w-3xl mx-auto p-6 gap-5"
-):
+    global size_mm_input
+    global size_in_input
+    global distance_input
+    global round_input
 
-    # -----------------------------------------------------
-    # Main content
-    # -----------------------------------------------------
+    global error_card
+    global error_text
 
-    with ui.element("main").props(
-        'role="main" aria-labelledby="page-title"'
-    ).classes("w-full"):
+    global result_card
+    global result_heading
+    global result_text
+    global details_text
 
-        ui.label(
-            "Visual Acuity Calculator"
-        ).props(
-            'id="page-title"'
-        ).classes(
-            "text-3xl font-bold"
-        )
+    ui.page_title("Visual Acuity Calculator")
 
-        ui.label(
-            "Calculate equivalent Snellen visual acuity "
-            "(20/x) from object size and viewing distance."
-        ).classes("text-base")
+    with ui.column().classes(
+        "w-full max-w-3xl mx-auto p-6 gap-5"
+    ):
 
         # -------------------------------------------------
-        # Inputs
+        # Main content
         # -------------------------------------------------
 
-        with ui.element("form").props(
-            'aria-labelledby="input-heading"'
+        with ui.element("main").props(
+            'role="main" aria-labelledby="page-title"'
         ).classes("w-full"):
 
             ui.label(
-                "Calculation inputs"
+                "Visual Acuity Calculator"
             ).props(
-                'id="input-heading"'
+                'id="page-title"'
             ).classes(
-                "text-xl font-semibold mt-4"
-            )
-
-            # Note: the "min" attribute is deliberately NOT
-            # set on these inputs. NiceGUI's number sanitize
-            # handler compares incoming values against min
-            # with max(), and the browser can send an empty
-            # string, which raises:
-            # TypeError: '>' not supported between instances
-            # of 'str' and 'float'
-            # Positive values are validated in calculate().
-
-            size_mm_input = ui.number(
-                label="Object size (millimeters)",
-                placeholder="Example: 18",
-            ).props(
-                'inputmode="decimal" '
-                'step="any" '
-                'aria-required="false" '
-                'autocomplete="off"'
-            ).classes(
-                "w-full"
-            )
-
-            size_in_input = ui.number(
-                label="Object size (inches)",
-                placeholder="Example: 0.71",
-            ).props(
-                'inputmode="decimal" '
-                'step="any" '
-                'aria-required="false" '
-                'autocomplete="off"'
-            ).classes(
-                "w-full"
+                "text-3xl font-bold"
             )
 
             ui.label(
-                "Fill in the size in millimeters OR in "
-                "inches; whichever one is filled in is used."
-            ).classes("text-sm text-gray-600")
+                "Calculate equivalent Snellen visual acuity "
+                "(20/x) from object size and viewing distance."
+            ).classes("text-base")
 
-            distance_input = ui.number(
-                label="Viewing distance (feet)",
-                placeholder="Example: 10",
-            ).props(
-                'inputmode="decimal" '
-                'step="any" '
-                'aria-required="true" '
-                'autocomplete="off"'
+            # -------------------------------------------------
+            # Inputs
+            # -------------------------------------------------
+
+            with ui.element("form").props(
+                'aria-labelledby="input-heading"'
+            ).classes("w-full"):
+
+                ui.label(
+                    "Calculation inputs"
+                ).props(
+                    'id="input-heading"'
+                ).classes(
+                    "text-xl font-semibold mt-4"
+                )
+
+                # No "min" attribute is deliberately used.
+                # NiceGUI can receive an empty string while
+                # editing a number input, which can cause a
+                # type comparison error inside the sanitizer.
+                # Positive values are validated by calculate().
+
+                size_mm_input = ui.number(
+                    label="Object size (millimeters)",
+                    placeholder="Example: 18",
+                ).props(
+                    'inputmode="decimal" '
+                    'step="any" '
+                    'aria-required="false" '
+                    'autocomplete="off"'
+                ).classes(
+                    "w-full"
+                )
+
+                size_in_input = ui.number(
+                    label="Object size (inches)",
+                    placeholder="Example: 0.71",
+                ).props(
+                    'inputmode="decimal" '
+                    'step="any" '
+                    'aria-required="false" '
+                    'autocomplete="off"'
+                ).classes(
+                    "w-full"
+                )
+
+                ui.label(
+                    "Fill in the size in millimeters OR in inches; "
+                    "whichever one is filled in is used."
+                ).classes(
+                    "text-sm text-gray-600"
+                )
+
+                distance_input = ui.number(
+                    label="Viewing distance (feet)",
+                    placeholder="Example: 10",
+                ).props(
+                    'inputmode="decimal" '
+                    'step="any" '
+                    'aria-required="true" '
+                    'autocomplete="off"'
+                ).classes(
+                    "w-full"
+                )
+
+                # -------------------------------------------------
+                # Original rounding checkbox
+                # -------------------------------------------------
+
+                round_input = ui.checkbox(
+                    "Round the Snellen denominator "
+                    "to the nearest whole number"
+                )
+
+                # -------------------------------------------------
+                # Buttons
+                # -------------------------------------------------
+
+                with ui.row().classes("gap-3"):
+
+                    ui.button(
+                        "Calculate",
+                        on_click=calculate,
+                        icon="calculate",
+                    ).props(
+                        'type="button"'
+                    )
+
+                    ui.button(
+                        "Clear",
+                        on_click=clear_form,
+                        icon="clear",
+                    ).props(
+                        'type="button" flat'
+                    )
+
+            # -------------------------------------------------
+            # Error
+            # -------------------------------------------------
+
+            with ui.card().props(
+                'role="alert" aria-live="assertive"'
+            ).classes(
+                "w-full hidden"
+            ) as error_card:
+
+                error_text = ui.label("")
+
+            # -------------------------------------------------
+            # Result
+            # -------------------------------------------------
+
+            with ui.card().props(
+                'role="region" '
+                'aria-live="polite" '
+                'aria-labelledby="result-heading"'
+            ).classes(
+                "w-full hidden"
+            ) as result_card:
+
+                result_heading = ui.label(
+                    "Calculation result"
+                ).props(
+                    'id="result-heading" tabindex="-1"'
+                ).classes(
+                    "text-xl font-semibold"
+                )
+
+                result_text = ui.label("")
+
+                details_text = ui.label("")
+
+            # -------------------------------------------------
+            # Formula information
+            # -------------------------------------------------
+
+            with ui.expansion(
+                "Formula reference",
+                icon="help_outline",
             ).classes(
                 "w-full"
-            )
+            ):
 
-            round_input = ui.checkbox(
-                "Round the Snellen denominator "
-                "to the nearest whole number"
-            )
+                ui.markdown(
+                    """
+The calculation uses the exact visual angle subtended
+by the object.
 
-            # -------------------------------------------------
-            # Buttons
-            # -------------------------------------------------
+A standard 20/20 optotype subtends 5 arcminutes.
 
-            with ui.row().classes("gap-3"):
+Sizes entered in inches are converted to millimeters
+(1 inch = 25.4 mm) before the calculation.
 
-                ui.button(
-                    "Calculate",
-                    on_click=calculate,
-                    icon="calculate",
-                ).props(
-                    'type="button"'
+The small-angle approximation is:
+
+**x ≈ 45.1148 × object size (mm) / distance (ft)**
+"""
                 )
-
-                ui.button(
-                    "Clear",
-                    on_click=clear_form,
-                    icon="clear",
-                ).props(
-                    'type="button" flat'
-                )
-
-        # -------------------------------------------------
-        # Error
-        # -------------------------------------------------
-
-        with ui.card().props(
-            'role="alert" aria-live="assertive"'
-        ).classes(
-            "w-full hidden"
-        ) as error_card:
-
-            error_text = ui.label("")
-
-        # -------------------------------------------------
-        # Result
-        # -------------------------------------------------
-
-        with ui.card().props(
-            'role="region" '
-            'aria-live="polite" '
-            'aria-labelledby="result-heading"'
-        ).classes(
-            "w-full hidden"
-        ) as result_card:
-
-            result_heading = ui.label(
-                "Calculation result"
-            ).props(
-                'id="result-heading" tabindex="-1"'
-            ).classes(
-                "text-xl font-semibold"
-            )
-
-            result_text = ui.label("")
-
-            details_text = ui.label("")
-
-        # -------------------------------------------------
-        # Formula information
-        # -------------------------------------------------
-
-        with ui.expansion(
-            "Formula reference",
-            icon="help_outline",
-        ).classes(
-            "w-full"
-        ):
-
-            ui.markdown(
-                """
-                The calculation uses the exact visual angle
-                subtended by the object.
-
-                A standard 20/20 optotype subtends 5
-                arcminutes.
-
-                Sizes entered in inches are converted to
-                millimeters (1 inch = 25.4 mm) before the
-                calculation.
-
-                The small-angle approximation is:
-
-                **x ≈ 45.1148 × object size (mm) / distance (ft)**
-                """
-            )
 
 
 # ---------------------------------------------------------
 # Native desktop application
 # ---------------------------------------------------------
-#
-# native=True tells NiceGUI to use a desktop webview
-# instead of opening an external browser.
-#
-# The application should therefore appear as its own
-# Windows desktop window.
-#
-# The __mp_main__ guard matches the process name that
-# multiprocessing children use on Windows, so frozen
-# executables and spawned workers both run the UI.
-#
+
 if __name__ in {"__main__", "__mp_main__"}:
     ui.run(
+        page,
         title="Visual Acuity Calculator",
         host="127.0.0.1",
-        port=8989,
+        port=8080,
         reload=False,
-        native=False,  # desktop window from source, browser when packaged
+        native=True,
         window_size=(1000, 750),
     )
