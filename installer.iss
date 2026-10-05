@@ -3,9 +3,9 @@
 ;
 ; https://jrsoftware.org/isinfo.php
 
-#define MyAppName "Visual Acuity Calculator"
-#define MyAppVersion "1.0.0"
-#define MyAppPublisher "Your Organization"
+#define MyAppName "Environmental Visual Acuity Calculator"
+#define MyAppVersion "2026.10.05"
+#define MyAppPublisher "Davis School District"
 #define MyAppExeName "VisualAcuityCalculator.exe"
 
 [Setup]
